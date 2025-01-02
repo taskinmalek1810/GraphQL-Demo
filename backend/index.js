@@ -39,18 +39,18 @@ const Project = mongoose.model(
   "Project",
   new mongoose.Schema({
     name: { type: String, required: true },
-    description: { type: String },
-    status: { type: String },
-    startDate: { type: String },
-    endDate: { type: String },
-    priority: { type: String },
+    description: String,
+    status: String,
+    startDate: String,
+    endDate: String,
+    priority: String,
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client" },
   })
 );
 
 // Middleware to check JWT token
 const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Get token from "Authorization: Bearer <token>"
+  const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
     return res
       .status(401)
@@ -61,7 +61,7 @@ const authenticate = (req, res, next) => {
       token,
       process.env.JWT_SECRET || "your_jwt_secret"
     );
-    req.user = decoded; // Attach the decoded user information to the request object
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });
@@ -110,10 +110,20 @@ const typeDefs = gql`
       priority: String
       clientId: ID!
     ): Project
+    editClient(id: ID!, name: String, email: String, clientType: String): Client
+    editProject(
+      id: ID!
+      name: String
+      description: String
+      status: String
+      startDate: String
+      endDate: String
+      priority: String
+    ): Project
   }
 `;
 
-// Resolvers for Queries and Mutations
+// Resolvers
 const resolvers = {
   Query: {
     clients: () => Client.find().populate("projects"),
@@ -122,14 +132,10 @@ const resolvers = {
   Mutation: {
     login: async (_, { email, password }) => {
       const admin = await Admin.findOne({ email });
-      if (!admin) {
-        throw new Error("Admin not found");
-      }
+      if (!admin) throw new Error("Admin not found");
 
       const isPasswordValid = await bcrypt.compare(password, admin.password);
-      if (!isPasswordValid) {
-        throw new Error("Invalid password");
-      }
+      if (!isPasswordValid) throw new Error("Invalid password");
 
       const token = jwt.sign(
         { id: admin._id, role: admin.role },
@@ -157,14 +163,42 @@ const resolvers = {
       });
       return project.save();
     },
+    editClient: async (_, { id, name, email, clientType }) => {
+      const client = await Client.findById(id);
+      if (!client) throw new Error("Client not found");
+
+      client.name = name || client.name;
+      client.email = email || client.email;
+      client.clientType = clientType || client.clientType;
+
+      await client.save();
+      return client;
+    },
+    editProject: async (
+      _,
+      { id, name, description, status, startDate, endDate, priority }
+    ) => {
+      const project = await Project.findById(id);
+      if (!project) throw new Error("Project not found");
+
+      project.name = name || project.name;
+      project.description = description || project.description;
+      project.status = status || project.status;
+      project.startDate = startDate || project.startDate;
+      project.endDate = endDate || project.endDate;
+      project.priority = priority || project.priority;
+
+      await project.save();
+      return project;
+    },
   },
 };
 
 // Express Setup
 const app = express();
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 
-// Apollo Server Setup
+// Apollo Server
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -182,67 +216,57 @@ const server = new ApolloServer({
   },
 });
 
-// Start Apollo Server and Apply to Express
-(async () => {
-  await server.start();
-  server.applyMiddleware({ app });
+// REST API Routes
+app.post("/createAdmin", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const admin = new Admin({ email, password: hashedPassword });
+    await admin.save();
+    res.status(201).json({ message: "Admin user created" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  // Custom REST-like API Endpoints
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const admin = await Admin.findOne({ email });
+    if (!admin) return res.status(400).json({ error: "Admin not found" });
 
-  // Add Admin User Endpoint (POST /createAdmin)
-  app.post("/createAdmin", async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const admin = new Admin({ email, password: hashedPassword });
-      await admin.save();
-      res.status(201).json({ message: "Admin user created" });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid)
+      return res.status(400).json({ error: "Invalid password" });
 
-  // Login API Route
-  app.post("/api/login", async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      const admin = await Admin.findOne({ email });
-      if (!admin) {
-        return res.status(400).json({ error: "Admin not found" });
-      }
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role },
+      process.env.JWT_SECRET || "your_jwt_secret",
+      { expiresIn: "1h" }
+    );
 
-      const isPasswordValid = await bcrypt.compare(password, admin.password);
-      if (!isPasswordValid) {
-        return res.status(400).json({ error: "Invalid password" });
-      }
+    return res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
-      const token = jwt.sign(
-        { id: admin._id, role: admin.role },
-        process.env.JWT_SECRET || "your_jwt_secret",
-        { expiresIn: "1h" }
-      );
+app.post("/api/addClient", authenticate, async (req, res) => {
+  const { name, email, clientType } = req.body;
+  try {
+    const client = new Client({ name, email, clientType });
+    await client.save();
+    res.status(200).json(client);
+  } catch (error) {
+    res.status(500).json({ error: "Error creating client" });
+  }
+});
 
-      return res.json({ token });
-    } catch (err) {
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Add Client API Route (POST /api/addClient)
-  app.post("/api/addClient", authenticate, async (req, res) => {
-    const { name, email, clientType } = req.body;
-    try {
-      const client = new Client({ name, email, clientType });
-      await client.save();
-      res.status(200).json(client);
-    } catch (error) {
-      res.status(500).json({ error: "Error creating client" });
-    }
-  });
-
-  // Add Project API Route (POST /api/addProject)
-  app.post("/api/addProject", authenticate, async (req, res) => {
-    const {
+app.post("/api/addProject", authenticate, async (req, res) => {
+  const { name, description, status, startDate, endDate, priority, clientId } =
+    req.body;
+  try {
+    const project = new Project({
       name,
       description,
       status,
@@ -250,43 +274,78 @@ const server = new ApolloServer({
       endDate,
       priority,
       clientId,
-    } = req.body;
-    try {
-      const project = new Project({
-        name,
-        description,
-        status,
-        startDate,
-        endDate,
-        priority,
-        clientId,
-      });
-      await project.save();
-      res.status(200).json(project);
-    } catch (error) {
-      res.status(500).json({ error: "Error creating project" });
-    }
-  });
+    });
+    await project.save();
+    res.status(200).json(project);
+  } catch (error) {
+    res.status(500).json({ error: "Error creating project" });
+  }
+});
 
-  // Get Client List Endpoint (GET /api/clients)
-  app.get("/api/clients", authenticate, async (req, res) => {
-    try {
-      const clients = await Client.find().populate("projects");
-      res.status(200).json(clients);
-    } catch (error) {
-      res.status(500).json({ error: "Error fetching clients" });
-    }
-  });
+// Clients List API
+app.get("/api/clients", authenticate, async (req, res) => {
+  try {
+    const clients = await Client.find().populate("projects");
+    res.status(200).json(clients);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching clients" });
+  }
+});
 
-  // Get Project List Endpoint (GET /api/projects)
-  app.get("/api/projects", authenticate, async (req, res) => {
-    try {
-      const projects = await Project.find();
-      res.status(200).json(projects);
-    } catch (error) {
-      res.status(500).json({ error: "Error fetching projects" });
-    }
-  });
+// Projects List API
+app.get("/api/projects", authenticate, async (req, res) => {
+  try {
+    const projects = await Project.find();
+    res.status(200).json(projects);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching projects" });
+  }
+});
+
+app.put("/api/editClient/:id", authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { name, email, clientType } = req.body;
+  try {
+    const client = await Client.findById(id);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+
+    client;
+    name = name || client.name;
+    client.email = email || client.email;
+    client.clientType = clientType || client.clientType;
+
+    await client.save();
+    res.status(200).json(client);
+  } catch (error) {
+    res.status(500).json({ error: "Error updating client" });
+  }
+});
+
+app.put("/api/editProject/:id", authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { name, description, status, startDate, endDate, priority } = req.body;
+  try {
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+
+    project.name = name || project.name;
+    project.description = description || project.description;
+    project.status = status || project.status;
+    project.startDate = startDate || project.startDate;
+    project.endDate = endDate || project.endDate;
+    project.priority = priority || project.priority;
+
+    await project.save();
+    res.status(200).json(project);
+  } catch (error) {
+    res.status(500).json({ error: "Error updating project" });
+  }
+});
+
+// Start Server
+(async () => {
+  await server.start();
+  server.applyMiddleware({ app });
 
   const PORT = 4000;
   app.listen(PORT, () => {
