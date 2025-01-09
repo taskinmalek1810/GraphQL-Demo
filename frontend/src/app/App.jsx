@@ -9,6 +9,8 @@ import { AuthProvider } from "./contexts/FirebaseAuthContext";
 import routes from "./routes";
 // FAKE SERVER
 import "../__api__";
+import { ApolloProvider } from "@apollo/client";
+import client from "./utils/apollo";
 
 export default function App() {
   const content = useRoutes(routes);
@@ -18,7 +20,7 @@ export default function App() {
       <AuthProvider>
         <MatxTheme>
           <CssBaseline />
-          {content}
+          <ApolloProvider client={client}>{content}</ApolloProvider>
         </MatxTheme>
       </AuthProvider>
     </SettingsProvider>

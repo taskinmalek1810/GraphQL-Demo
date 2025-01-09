@@ -8,5 +8,5 @@ export default function AuthGuard({ children }) {
 
   if (isAuthenticated) return <>{children}</>;
 
-  return <Navigate replace to="/session/signin" state={{ from: pathname }} />;
+  return <Navigate replace to="/signin" state={{ from: pathname }} />;
 }

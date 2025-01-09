@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -17,20 +17,21 @@ import MatxDivider from "app/components/MatxDivider";
 import { Paragraph, Span } from "app/components/Typography";
 // GLOBAL CUSTOM HOOKS
 import useAuth from "app/hooks/useAuth";
+import { gql, useMutation } from "@apollo/client";
 
 // STYLED COMPONENTS
 const GoogleButton = styled(Button)(({ theme }) => ({
   color: "rgba(0, 0, 0, 0.87)",
   boxShadow: theme.shadows[0],
   backgroundColor: "#e0e0e0",
-  "&:hover": { backgroundColor: "#d5d5d5" }
+  "&:hover": { backgroundColor: "#d5d5d5" },
 }));
 
 const Logo = styled("div")({
   gap: 10,
   display: "flex",
   alignItems: "center",
-  "& span": { fontSize: 26, lineHeight: 1.3, fontWeight: 800 }
+  "& span": { fontSize: 26, lineHeight: 1.3, fontWeight: 800 },
 });
 
 const FirebaseRoot = styled("div")(({ theme }) => ({
@@ -49,12 +50,12 @@ const FirebaseRoot = styled("div")(({ theme }) => ({
     backgroundSize: "cover",
     background: "#161c37 url(/assets/images/bg-3.png) no-repeat",
     [theme.breakpoints.down("sm")]: { minWidth: 200 },
-    "& img": { width: 32, height: 32 }
+    "& img": { width: 32, height: 32 },
   },
   "& .mainTitle": {
     fontSize: 18,
     lineHeight: 1.3,
-    marginBottom: 24
+    marginBottom: 24,
   },
   "& .item": {
     position: "relative",
@@ -68,16 +69,29 @@ const FirebaseRoot = styled("div")(({ theme }) => ({
       content: '""',
       borderRadius: 4,
       position: "absolute",
-      backgroundColor: theme.palette.error.main
+      backgroundColor: theme.palette.error.main,
+    },
+  },
+}));
+
+const LOGIN_MUTATION = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      user {
+        id
+        email
+        name
+      }
     }
   }
-}));
+`;
 
 // initial login credentials
 const initialValues = {
   email: "jason@ui-lib.com",
   password: "dummyPass",
-  remember: true
+  remember: true,
 };
 
 // form field validation schema
@@ -85,25 +99,39 @@ const validationSchema = Yup.object().shape({
   password: Yup.string()
     .min(6, "Password must be 6 character length")
     .required("Password is required!"),
-  email: Yup.string().email("Invalid Email address").required("Email is required!")
+  email: Yup.string()
+    .email("Invalid Email address")
+    .required("Email is required!"),
 });
 
-export default function FirebaseLogin() {
+const Login = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { state } = useLocation();
   const { enqueueSnackbar } = useSnackbar();
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuth();
+  const [login, { loading, error }] = useMutation(LOGIN_MUTATION);
 
   const handleFormSubmit = async (values) => {
+    console.log("values", values);
     try {
-      // alert(JSON.stringify(values, null, 4));
-      await signInWithEmail(values.email, values.password);
-      navigate(state ? state.from : "/");
+      const { data } = await login({
+        variables: {
+          email: values.email,
+          password: values.password,
+        },
+      });
+
+      // Store the token in localStorage
+      localStorage.setItem("token", data.login.token);
+
+      // Navigate to the intended page or dashboard
+      navigate(state?.from || "/");
+
       enqueueSnackbar("Logged In Successfully", { variant: "success" });
     } catch (error) {
-      alert(JSON.stringify(error, null, 4));
-      enqueueSnackbar(error.message, { variant: "error" });
+      console.error("Login error:", error);
+      enqueueSnackbar(error.message || "Login failed", { variant: "error" });
     }
   };
 
@@ -136,7 +164,11 @@ export default function FirebaseLogin() {
 
               <Span flexGrow={1}></Span>
 
-              <a href="https://ui-lib.com/" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://ui-lib.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <img src="/assets/images/logos/ui-lib.png" alt="UI Lib Logo" />
               </a>
             </div>
@@ -148,7 +180,10 @@ export default function FirebaseLogin() {
                 fullWidth
                 variant="contained"
                 onClick={handleGoogleLogin}
-                startIcon={<img src="/assets/images/logos/google.svg" alt="google" />}>
+                startIcon={
+                  <img src="/assets/images/logos/google.svg" alt="google" />
+                }
+              >
                 Sign In With Google
               </GoogleButton>
             </Box>
@@ -159,7 +194,8 @@ export default function FirebaseLogin() {
               <Formik
                 onSubmit={handleFormSubmit}
                 initialValues={initialValues}
-                validationSchema={validationSchema}>
+                validationSchema={validationSchema}
+              >
                 {({
                   values,
                   errors,
@@ -167,7 +203,7 @@ export default function FirebaseLogin() {
                   isSubmitting,
                   handleChange,
                   handleBlur,
-                  handleSubmit
+                  handleSubmit,
                 }) => (
                   <form onSubmit={handleSubmit}>
                     <TextField
@@ -213,11 +249,12 @@ export default function FirebaseLogin() {
                         <Paragraph>Remember Me</Paragraph>
                       </Box>
 
-                      <NavLink
-                        to="/session/forgot-password"
-                        style={{ color: theme.palette.primary.main }}>
+                      <span
+                        onClick={() => navigate("/forgot-password")}
+                        style={{ color: theme.palette.primary.main }}
+                      >
                         Forgot password?
-                      </NavLink>
+                      </span>
                     </Box>
 
                     <LoadingButton
@@ -225,20 +262,22 @@ export default function FirebaseLogin() {
                       color="primary"
                       loading={isSubmitting}
                       variant="contained"
-                      sx={{ my: 2 }}>
+                      sx={{ my: 2 }}
+                    >
                       Login
                     </LoadingButton>
 
                     <Paragraph>
                       Don't have an account?
-                      <NavLink
-                        to="/session/signup"
+                      <span
+                        onClick={() => navigate("/signup")}
                         style={{
                           marginInlineStart: 5,
-                          color: theme.palette.primary.main
-                        }}>
+                          color: theme.palette.primary.main,
+                        }}
+                      >
                         Register
-                      </NavLink>
+                      </span>
                     </Paragraph>
                   </form>
                 )}
@@ -249,4 +288,6 @@ export default function FirebaseLogin() {
       </Card>
     </FirebaseRoot>
   );
-}
+};
+
+export default Login;

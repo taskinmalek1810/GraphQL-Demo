@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const cors = require("cors");
 
 // MongoDB connection
 mongoose
@@ -261,7 +262,16 @@ const resolvers = {
 
 // Express Setup
 const app = express();
-app.use(express.json());
+// app.use(express.json());
+
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"], // Add your frontend URLs
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  })
+);
 
 // Apollo Server
 const server = new ApolloServer({
