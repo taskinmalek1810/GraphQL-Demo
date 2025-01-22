@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const cors = require("cors");
 
 // MongoDB connection
 mongoose
@@ -93,6 +92,7 @@ const typeDefs = gql`
     companyName: String
     email: String!
     userType: String!
+    userId: ID!
   }
 
   type Client {
@@ -101,6 +101,7 @@ const typeDefs = gql`
     email: String!
     projects: [Project]
     clientType: String!
+    userId: ID!
   }
 
   type Project {
@@ -152,6 +153,8 @@ const typeDefs = gql`
       endDate: String
       priority: String
     ): Project
+    deleteClient(id: ID!): String
+    deleteProject(id: ID!): String
   }
 `;
 
@@ -159,7 +162,12 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     clients: async (_, __, { user }) => {
-      return Client.find({ userId: user.id }).populate("projects");
+      try {
+        console.log("user", user);
+        return await Client.find({ userId: user.id }).populate("projects");
+      } catch (err) {
+        throw new Error("Error fetching clients: " + err.message);
+      }
     },
     projects: async (_, __, { user }) => {
       return Project.find({ userId: user.id });
@@ -200,10 +208,28 @@ const resolvers = {
       return { token };
     },
     addClient: async (_, { name, email, clientType }, { user }) => {
-      const client = new Client({ name, email, clientType, userId: user.id });
+      const client = new Client({
+        name,
+        email,
+        clientType,
+        userId: user.id, // Make sure this is set
+      });
+      console.log("client", client);
       await client.save();
       return client;
     },
+    // addClient: async (_, { name, email, clientType }, { user }) => {
+    //   const client = new Client({ name, email, clientType, userId: user.id });
+    //   await client.save();
+    //   return {
+    //     id: client.id,
+    //     name: client.name,
+    //     email: client.email,
+    //     clientType: client.clientType,
+    //     userId: client.userId, // Ensure this field is included
+    //   };
+    // },
+
     addProject: async (
       _,
       { name, description, status, startDate, endDate, priority, clientId },
@@ -257,36 +283,94 @@ const resolvers = {
       await project.save();
       return project;
     },
+    deleteClient: async (_, { id }, { user }) => {
+      // Ensure the user is authenticated
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        // Find the client by ID and ensure it belongs to the authenticated user
+        const client = await Client.findOne({ _id: id, createdBy: user.id });
+        if (!client) {
+          throw new Error("Client not found or not authorized");
+        }
+
+        // Delete the client
+        await client.remove();
+        return "Client deleted successfully";
+      } catch (error) {
+        throw new Error(error.message || "Error deleting client");
+      }
+    },
+    deleteProject: async (_, { id }, { user }) => {
+      // Ensure the user is authenticated
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        // Find the project by ID and ensure it belongs to the authenticated user
+        const project = await Project.findOne({ _id: id, createdBy: user.id });
+        if (!project) {
+          throw new Error("Project not found or not authorized");
+        }
+
+        // Delete the project
+        await project.remove();
+        return "Project deleted successfully";
+      } catch (error) {
+        throw new Error(error.message || "Error deleting project");
+      }
+    },
   },
 };
 
 // Express Setup
 const app = express();
-// app.use(express.json());
-
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"], // Add your frontend URLs
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  })
-);
+app.use(express.json());
 
 // Apollo Server
+// const server = new ApolloServer({
+//   typeDefs,
+//   resolvers,
+//   context: ({ req }) => {
+//     const authHeader = req.headers.authorization || "";
+//     const token = authHeader.replace("Bearer ", "");
+
+//     if (token) {
+//       try {
+//         const user = jwt.verify(token, JWT_SECRET);
+//         return { user };
+//       } catch (error) {
+//         console.warn("Invalid token:", error.message);
+//       }
+//     }
+
+//     // If no token or invalid token, return empty context
+//     return {};
+//   },
+// });
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: ({ req }) => {
-    const token = req.headers.authorization || "";
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.replace("Bearer ", "");
+
+    if (!token) {
+      throw new Error("Authorization header missing");
+    }
+
     try {
-      const decoded = jwt.verify(
+      const user = jwt.verify(
         token,
         process.env.JWT_SECRET || "your_jwt_secret"
       );
-      return { user: decoded };
-    } catch (err) {
-      throw new Error("Unauthorized");
+      return { user };
+    } catch (error) {
+      throw new Error("Invalid token: " + error.message);
     }
   },
 });
@@ -499,6 +583,47 @@ app.put("/api/editProject/:id", authenticate, async (req, res) => {
     res.json(project);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/deleteClient/:id", authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    console.log("id", id);
+    const client = await Client.findOne({ _id: id, userId: userId });
+    if (!client) {
+      return res
+        .status(404)
+        .json({ error: "Client not found or not authorized" });
+    }
+
+    await client.remove();
+    res.json({ message: "Client deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Error deleting client" });
+  }
+});
+
+// Delete a project
+app.delete("/deleteProject/:id", authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Find the project and ensure it belongs to the authenticated user
+    const project = await Project.findOne({ _id: id, createdBy: userId });
+    if (!project) {
+      return res
+        .status(404)
+        .json({ error: "Project not found or not authorized" });
+    }
+
+    // Delete the project
+    await project.remove();
+    res.json({ message: "Project deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Error deleting project" });
   }
 });
 
