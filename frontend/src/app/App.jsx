@@ -4,7 +4,6 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { MatxTheme } from "./components";
 // ALL CONTEXTS
 import SettingsProvider from "./contexts/SettingsContext";
-import { AuthProvider } from "./contexts/FirebaseAuthContext";
 // ROUTES
 import routes from "./routes";
 // FAKE SERVER
@@ -17,12 +16,10 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <AuthProvider>
-        <MatxTheme>
-          <CssBaseline />
-          <ApolloProvider client={client}>{content}</ApolloProvider>
-        </MatxTheme>
-      </AuthProvider>
+      <MatxTheme>
+        <CssBaseline />
+        <ApolloProvider client={client}>{content}</ApolloProvider>
+      </MatxTheme>
     </SettingsProvider>
   );
 }

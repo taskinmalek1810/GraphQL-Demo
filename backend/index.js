@@ -470,6 +470,9 @@ const server = new ApolloServer({
     } catch (error) {
       throw new Error("Invalid token: " + error.message);
     }
+
+    // If no token or invalid token, return empty context
+    return {};
   },
 });
 
