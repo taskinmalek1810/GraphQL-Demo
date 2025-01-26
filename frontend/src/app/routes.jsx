@@ -2,12 +2,10 @@ import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 
 import AuthGuard from "./auth/AuthGuard";
-import { authRoles } from "./auth/authRoles";
 
 import Loadable from "./components/Loadable";
 import MatxLayout from "./components/MatxLayout/MatxLayout";
 import authRoutes from "./views/sessions/auth-routes";
-import materialRoutes from "app/views/material-kit/MaterialRoutes";
 
 // E-CHART PAGE
 const AppEchart = Loadable(
@@ -25,18 +23,17 @@ const routes = [
       </AuthGuard>
     ),
     children: [
-      ...materialRoutes,
       // dashboard route
       {
         path: "/dashboard/default",
         element: <Analytics />,
-        auth: authRoles.admin,
+        // auth: authRoles.admin,
       },
       // e-chart route
       {
         path: "/charts/echarts",
         element: <AppEchart />,
-        auth: authRoles.editor,
+        // auth: authRoles.editor,
       },
     ],
   },
