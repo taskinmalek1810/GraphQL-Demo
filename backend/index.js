@@ -7,10 +7,7 @@ require("dotenv").config();
 
 // MongoDB connection
 mongoose
-  .connect("mongodb://localhost:27017/client_management", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect("mongodb://localhost:27017/client_management")
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error(err));
 
@@ -99,7 +96,7 @@ const typeDefs = gql`
     id: ID!
     name: String!
     email: String!
-    projects: [Project]
+    projects: [Project!]!
     clientType: String!
     userId: ID!
   }
@@ -117,6 +114,13 @@ const typeDefs = gql`
 
   type LoginResponse {
     token: String!
+    user: User!
+  }
+
+  type User {
+    userId: ID!
+    name: String!
+    email: String!
   }
 
   type Query {
@@ -161,14 +165,27 @@ const typeDefs = gql`
 // Resolvers
 const resolvers = {
   Query: {
+    // clients: async (_, __, { user }) => {
+    //   try {
+    //     console.log("user", user);
+    //     return await Client.find({ userId: user.id }).populate("projects");
+    //   } catch (err) {
+    //     throw new Error("Error fetching clients: " + err.message);
+    //   }
+    // },
     clients: async (_, __, { user }) => {
+      if (!user) {
+        throw new Error("Unauthorized: User not logged in.");
+      }
       try {
-        console.log("user", user);
+        console.log("user1458", user);
+        // Fetch clients associated with the logged-in user's userId
         return await Client.find({ userId: user.id }).populate("projects");
       } catch (err) {
         throw new Error("Error fetching clients: " + err.message);
       }
     },
+
     projects: async (_, __, { user }) => {
       return Project.find({ userId: user.id });
     },
@@ -189,32 +206,88 @@ const resolvers = {
       await user.save();
       return user;
     },
+    // login: async (_, { email, password }) => {
+    //   console.log(`Attempting to login with email: ${email}`);
+    //   console.log("user", User);
+    //   const user = await User.findOne({ email });
+    //   console.log("user1234", user);
+    //   if (!user) throw new Error("User not found");
+
+    //   console.log(
+    //     `Comparing password: ${password} with stored hash: ${user.password}`
+    //   );
+    //   const isPasswordValid = await bcrypt.compare(password, user.password);
+    //   if (!isPasswordValid) throw new Error("Invalid password");
+
+    //   const token = jwt.sign(
+    //     { id: user._id, role: user.role },
+    //     process.env.JWT_SECRET || "your_jwt_secret",
+    //     { expiresIn: "1h" }
+    //   );
+    //   return { token };
+    // },
+
+    // login: async (_, { email, password }) => {
+    //   const user = await User.findOne({ email });
+    //   if (!user) {
+    //     throw new Error("User not found");
+    //   }
+    //   const isPasswordValid = await bcrypt.compare(password, user.password);
+    //   if (!isPasswordValid) {
+    //     throw new Error("Invalid password");
+    //   }
+    //   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    //     expiresIn: "1d",
+    //   });
+
+    //   return {
+    //     token,
+    //     user: {
+    //       userId: user._id,
+    //       name: user.name,
+    //       email: user.email,
+    //     },
+    //   };
+    // },
+
     login: async (_, { email, password }) => {
-      console.log(`Attempting to login with email: ${email}`);
       const user = await User.findOne({ email });
       if (!user) throw new Error("User not found");
 
-      console.log(
-        `Comparing password: ${password} with stored hash: ${user.password}`
-      );
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) throw new Error("Invalid password");
-
+      console.log("user", user);
       const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET || "your_jwt_secret",
         { expiresIn: "1h" }
       );
-      return { token };
+
+      return {
+        token,
+        user: {
+          userId: user._id.toString(),
+          name: user.name || "N/A", // Map _id to userId
+          userType: user.userType,
+          companyName: user.companyName,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      };
     },
+
     addClient: async (_, { name, email, clientType }, { user }) => {
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
       const client = new Client({
         name,
         email,
         clientType,
-        userId: user.id, // Make sure this is set
+        userId: user.userId,
       });
-      console.log("client", client);
       await client.save();
       return client;
     },
@@ -248,18 +321,32 @@ const resolvers = {
       await project.save();
       return project;
     },
-    editClient: async (_, { id, name, email, clientType }, { user }) => {
-      const client = await Client.findOne({ _id: id, userId: user.id });
-      if (!client)
-        throw new Error(
-          "Client not found or you do not have permission to edit"
-        );
+    // editClient: async (_, { id, name, email, clientType }, { user }) => {
+    //   const client = await Client.findOne({ _id: id, userId: user.id });
+    //   if (!client)
+    //     throw new Error(
+    //       "Client not found or you do not have permission to edit"
+    //     );
 
-      client.name = name || client.name;
-      client.email = email || client.email;
-      client.clientType = clientType || client.clientType;
+    //   client.name = name || client.name;
+    //   client.email = email || client.email;
+    //   client.clientType = clientType || client.clientType;
 
-      await client.save();
+    //   await client.save();
+    //   return client;
+    // },
+    editClient: async (_, { clientId, name, email, clientType }, { user }) => {
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+      const client = await Client.findOneAndUpdate(
+        { _id: clientId, userId: user.userId },
+        { name, email, clientType },
+        { new: true }
+      );
+      if (!client) {
+        throw new Error("Client not found or unauthorized");
+      }
       return client;
     },
     editProject: async (
@@ -305,13 +392,19 @@ const resolvers = {
     },
     deleteProject: async (_, { id }, { user }) => {
       // Ensure the user is authenticated
+      console.log("id897456", id);
       if (!user) {
         throw new Error("Authentication required");
       }
 
       try {
         // Find the project by ID and ensure it belongs to the authenticated user
+        console.log(
+          " const project = await ProjectModel.findById(id);",
+          Project.findById(id)
+        );
         const project = await Project.findOne({ _id: id, createdBy: user.id });
+
         if (!project) {
           throw new Error("Project not found or not authorized");
         }
@@ -356,6 +449,11 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: ({ req }) => {
+    // Skip context verification on login API
+    if (req.body.query.includes("login")) {
+      return {}; // No need to do any authentication or context here for login
+    }
+
     const authHeader = req.headers.authorization || "";
     const token = authHeader.replace("Bearer ", "");
 
