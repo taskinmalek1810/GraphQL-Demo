@@ -66,27 +66,29 @@ const subscribarList = [
   },
 ];
 
-export default function SimpleTable({ clients }) {
+export default function ProjectTable({ projects }) {
   return (
     <Box width="100%" overflow="auto">
       <StyledTable>
         <TableHead>
           <TableRow>
-            <TableCell align="left">Id</TableCell>
             <TableCell align="center">Name</TableCell>
-            <TableCell align="center">Email</TableCell>
-            <TableCell align="center">Company Type</TableCell>
+            <TableCell align="center">Description</TableCell>
+            <TableCell align="center">Priority</TableCell>
+            <TableCell align="center">Start Date</TableCell>
+            <TableCell align="center">Status</TableCell>
             <TableCell align="right">Action</TableCell>
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {clients.map((client, index) => (
+          {projects.map((project, index) => (
             <TableRow key={index}>
-              <TableCell align="left">{client.id}</TableCell>
-              <TableCell align="center">{client.name}</TableCell>
-              <TableCell align="center">{client.email}</TableCell>
-              <TableCell align="center">{client.clientType}</TableCell>
+              <TableCell align="center">{project.name}</TableCell>
+              <TableCell align="center">{project.description}</TableCell>
+              <TableCell align="center">{project.priority}</TableCell>
+              <TableCell align="center">{project.startDate}</TableCell>
+              <TableCell align="center">{project.status}</TableCell>
               <TableCell align="right">
                 <IconButton>
                   <Icon color="error">close</Icon>

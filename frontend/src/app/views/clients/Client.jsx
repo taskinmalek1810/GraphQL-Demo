@@ -1,9 +1,9 @@
 import { Box, styled } from "@mui/material";
-import SimpleTable from "./SimpleTable";
-import PaginationTable from "./PaginationTable";
+// import PaginationTable from "./PaginationTable";
 import { Breadcrumb, SimpleCard } from "app/components";
 import { gql, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
+import SimpleTable from "../material-kit/tables/SimpleTable";
 
 const CLIENTS_QUERY = gql`
   query {
@@ -30,7 +30,7 @@ const Container = styled("div")(({ theme }) => ({
   },
 }));
 
-export default function AppTable() {
+export default function ClientTable() {
   const { loading, error, data } = useQuery(CLIENTS_QUERY);
   const [clients, setClients] = useState([]);
 

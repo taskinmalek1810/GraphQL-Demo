@@ -1,5 +1,7 @@
 const navigations = [
   { name: "Dashboard", path: "/dashboard/default", icon: "dashboard" },
+  { name: "Clients", path: "/clients" },
+  { name: "Projects", path: "/projects" },
   { label: "PAGES", type: "label" },
   {
     name: "/Auth",

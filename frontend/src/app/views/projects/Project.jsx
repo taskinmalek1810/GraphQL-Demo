@@ -1,22 +1,22 @@
 import { Box, styled } from "@mui/material";
-import SimpleTable from "./SimpleTable";
-import PaginationTable from "./PaginationTable";
+// import PaginationTable from "./PaginationTable";
 import { Breadcrumb, SimpleCard } from "app/components";
 import { gql, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
+import SimpleTable from "../material-kit/tables/SimpleTable";
+import ProjectTable from "app/components/projects/ProjectTable";
 
-const CLIENTS_QUERY = gql`
-  query {
-    clients {
+const GET_PROJECTS_QUERY = gql`
+  query GetProjects {
+    projects {
       id
       name
-      email
-      projects {
-        id
-        name
-      }
-      clientType
-      userId
+      description
+      status
+      startDate
+      endDate
+      priority
+      clientId
     }
   }
 `;
@@ -30,13 +30,13 @@ const Container = styled("div")(({ theme }) => ({
   },
 }));
 
-export default function AppTable() {
-  const { loading, error, data } = useQuery(CLIENTS_QUERY);
-  const [clients, setClients] = useState([]);
+export default function Project() {
+  const { loading, error, data } = useQuery(GET_PROJECTS_QUERY);
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     if (data) {
-      setClients(data.clients);
+      setProjects(data.projects);
     }
   }, [data]);
   console.log("data1234", data);
@@ -44,12 +44,15 @@ export default function AppTable() {
     <Container>
       <Box className="breadcrumb">
         <Breadcrumb
-          routeSegments={[{ name: "Dashboard", path: "/" }, { name: "Client" }]}
+          routeSegments={[
+            { name: "Dashboard", path: "/" },
+            { name: "Project" },
+          ]}
         />
       </Box>
 
-      <SimpleCard title="Client Table">
-        <SimpleTable clients={clients} />
+      <SimpleCard title="Project Table">
+        <ProjectTable projects={projects} />
       </SimpleCard>
 
       {/* <SimpleCard title="Pagination Table">
