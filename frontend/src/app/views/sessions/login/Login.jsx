@@ -100,12 +100,13 @@ const Login = () => {
           password: values.password,
         },
       });
-
+      console.log("data", data);
       // Store the token in localStorage
       localStorage.setItem("token", data.login.token);
+      console.log("run....");
 
       // Navigate to the intended page or dashboard
-      navigate(state?.from || "/");
+      navigate("/clients" || "/");
 
       enqueueSnackbar("Logged In Successfully", { variant: "success" });
     } catch (error) {

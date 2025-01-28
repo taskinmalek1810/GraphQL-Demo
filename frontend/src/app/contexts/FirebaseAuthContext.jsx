@@ -15,7 +15,7 @@ import { firebaseConfig } from "app/config";
 import Loading from "app/components/MatxLoading";
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// const auth = getAuth(app);
 
 const initialAuthState = {
   user: null,
@@ -38,7 +38,7 @@ const reducer = (state, action) => {
 
 const AuthContext = createContext({
   ...initialAuthState,
-  method: "FIREBASE"
+  // method: "FIREBASE"
 });
 
 export const AuthProvider = ({ children }) => {

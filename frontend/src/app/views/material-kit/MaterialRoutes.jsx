@@ -13,14 +13,18 @@ const AppDialog = Loadable(lazy(() => import("./dialog/AppDialog")));
 const AppButton = Loadable(lazy(() => import("./buttons/AppButton")));
 const AppCheckbox = Loadable(lazy(() => import("./checkbox/AppCheckbox")));
 const AppSnackbar = Loadable(lazy(() => import("./snackbar/AppSnackbar")));
-const AppAutoComplete = Loadable(lazy(() => import("./auto-complete/AppAutoComplete")));
-const AppExpansionPanel = Loadable(lazy(() => import("./expansion-panel/AppExpansionPanel")));
+const AppAutoComplete = Loadable(
+  lazy(() => import("./auto-complete/AppAutoComplete"))
+);
+const AppExpansionPanel = Loadable(
+  lazy(() => import("./expansion-panel/AppExpansionPanel"))
+);
 
 const materialRoutes = [
   { path: "/material/table", element: <AppTable /> },
   { path: "/material/form", element: <AppForm /> },
   { path: "/material/buttons", element: <AppButton /> },
-  { path: "/material/icons", element: <AppIcon /> },
+{ path: "/material/icons", element: <AppIcon /> },
   { path: "/material/progress", element: <AppProgress /> },
   { path: "/material/menu", element: <AppMenu /> },
   { path: "/material/checkbox", element: <AppCheckbox /> },
@@ -30,7 +34,7 @@ const materialRoutes = [
   { path: "/material/autocomplete", element: <AppAutoComplete /> },
   { path: "/material/expansion-panel", element: <AppExpansionPanel /> },
   { path: "/material/dialog", element: <AppDialog /> },
-  { path: "/material/snackbar", element: <AppSnackbar /> }
+  { path: "/material/snackbar", element: <AppSnackbar /> },
 ];
 
 export default materialRoutes;

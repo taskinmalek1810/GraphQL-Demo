@@ -25,7 +25,7 @@ const routes = [
     children: [
       // dashboard route
       {
-        path: "/dashboard/default",
+        path: "/clients",
         element: <Analytics />,
         // auth: authRoles.admin,
       },

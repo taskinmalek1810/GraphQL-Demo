@@ -3,10 +3,11 @@ import { Navigate, useLocation } from "react-router-dom";
 import useAuth from "app/hooks/useAuth";
 
 export default function AuthGuard({ children }) {
-  const { isAuthenticated } = useAuth();
+  const token = localStorage.getItem("token");
+  console.log("token", token);
   const { pathname } = useLocation();
 
-  if (isAuthenticated) return <>{children}</>;
+  if (token) return <>{children}</>;
 
   return <Navigate replace to="/signin" state={{ from: pathname }} />;
 }
