@@ -10,10 +10,11 @@ import routes from "./routes";
 import "../__api__";
 import { ApolloProvider } from "@apollo/client";
 import client from "./utils/apollo";
+import { useJwtVerify } from "./hooks/useJwtVerify";
 
 export default function App() {
   const content = useRoutes(routes);
-
+  useJwtVerify();
   return (
     <SettingsProvider>
       <MatxTheme>
