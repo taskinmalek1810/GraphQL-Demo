@@ -10,7 +10,7 @@ import navigations from "app/navigations";
 const StyledScrollBar = styled(Scrollbar)(() => ({
   paddingLeft: "1rem",
   paddingRight: "1rem",
-  position: "relative"
+  position: "relative",
 }));
 
 const SideNavMobile = styled("div")(({ theme }) => ({
@@ -22,7 +22,7 @@ const SideNavMobile = styled("div")(({ theme }) => ({
   zIndex: -1,
   width: "100vw",
   background: "rgba(0, 0, 0, 0.54)",
-  [theme.breakpoints.up("lg")]: { display: "none" }
+  [theme.breakpoints.up("lg")]: { display: "none" },
 }));
 
 export default function Sidenav({ children }) {
@@ -36,8 +36,11 @@ export default function Sidenav({ children }) {
       ...settings,
       [activeLayoutSettingsName]: {
         ...activeLayoutSettings,
-        leftSidebar: { ...activeLayoutSettings.leftSidebar, ...sidebarSettings }
-      }
+        leftSidebar: {
+          ...activeLayoutSettings.leftSidebar,
+          ...sidebarSettings,
+        },
+      },
     });
   };
 

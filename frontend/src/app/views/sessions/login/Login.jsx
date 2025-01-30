@@ -106,7 +106,7 @@ const Login = () => {
       console.log("run....");
 
       // Navigate to the intended page or dashboard
-      navigate("/clients" || "/");
+      navigate("/dashboard" || "/");
 
       enqueueSnackbar("Logged In Successfully", { variant: "success" });
     } catch (error) {

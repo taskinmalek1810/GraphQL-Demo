@@ -8,7 +8,14 @@ import {
   TableCell,
   TableHead,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
+import { useState } from "react";
 
 // STYLED COMPONENT
 const StyledTable = styled(Table)(({ theme }) => ({
@@ -21,52 +28,29 @@ const StyledTable = styled(Table)(({ theme }) => ({
   },
 }));
 
-const subscribarList = [
-  {
-    name: "john doe",
-    date: "18 january, 2019",
-    amount: 1000,
-    status: "close",
-    company: "ABC Fintech LTD.",
-  },
-  {
-    name: "kessy bryan",
-    date: "10 january, 2019",
-    amount: 9000,
-    status: "open",
-    company: "My Fintech LTD.",
-  },
-  {
-    name: "james cassegne",
-    date: "8 january, 2019",
-    amount: 5000,
-    status: "close",
-    company: "Collboy Tech LTD.",
-  },
-  {
-    name: "lucy brown",
-    date: "1 january, 2019",
-    amount: 89000,
-    status: "open",
-    company: "ABC Fintech LTD.",
-  },
-  {
-    name: "lucy brown",
-    date: "1 january, 2019",
-    amount: 89000,
-    status: "open",
-    company: "ABC Fintech LTD.",
-  },
-  {
-    name: "lucy brown",
-    date: "1 january, 2019",
-    amount: 89000,
-    status: "open",
-    company: "ABC Fintech LTD.",
-  },
-];
-
 export default function SimpleTable({ clients }) {
+  // Add state for dialog
+  const [open, setOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+
+  // Handle dialog open
+  const handleClickOpen = (client) => {
+    setSelectedClient(client);
+    setOpen(true);
+  };
+
+  // Handle dialog close
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedClient(null);
+  };
+
+  // Handle delete confirmation
+  const handleDelete = () => {
+    // Add your delete logic here
+    console.log("Deleting client:", selectedClient);
+    handleClose();
+  };
   return (
     <Box width="100%" overflow="auto">
       <StyledTable>
@@ -88,7 +72,7 @@ export default function SimpleTable({ clients }) {
               <TableCell align="center">{client.email}</TableCell>
               <TableCell align="center">{client.clientType}</TableCell>
               <TableCell align="right">
-                <IconButton>
+                <IconButton onClick={() => handleClickOpen(client)}>
                   <Icon color="error">close</Icon>
                 </IconButton>
               </TableCell>
@@ -96,6 +80,23 @@ export default function SimpleTable({ clients }) {
           ))}
         </TableBody>
       </StyledTable>
+
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete {selectedClient?.name}?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

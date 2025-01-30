@@ -43,12 +43,7 @@ export default function Project() {
   return (
     <Container>
       <Box className="breadcrumb">
-        <Breadcrumb
-          routeSegments={[
-            { name: "Dashboard", path: "/" },
-            { name: "Project" },
-          ]}
-        />
+        <Breadcrumb routeSegments={[{ name: "Project" }]} />
       </Box>
 
       <SimpleCard title="Project Table">
