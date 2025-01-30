@@ -9,7 +9,7 @@ export const useJwtVerify = () => {
 
   useEffect(() => {
     const verifyToken = () => {
-      if (!token || isExpired) {
+      if (!token) {
         // Token is expired or doesn't exist
         localStorage.clear();
         navigate("/signin");

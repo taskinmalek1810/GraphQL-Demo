@@ -18,11 +18,54 @@ import { useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import { gql, useMutation } from "@apollo/client";
+
+const EDIT_CLIENT = gql`
+  mutation EditClient(
+    $id: ID!
+    $name: String
+    $email: String
+    $clientType: String
+  ) {
+    editClient(id: $id, name: $name, email: $email, clientType: $clientType) {
+      id
+      name
+      email
+      clientType
+      userId
+    }
+  }
+`;
+
+const DELETE_CLIENT = gql`
+  mutation DeleteClient($id: ID!) {
+    deleteClient(id: $id)
+  }
+`;
+
+const CLIENTS_QUERY = gql`
+  query {
+    clients {
+      id
+      name
+      email
+      projects {
+        id
+        name
+      }
+      clientType
+      userId
+    }
+  }
+`;
 
 export default function SimpleTable({ clients }) {
   const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [openEditModal, setOpenEditModal] = useState(false);
+
+  const [editClient] = useMutation(EDIT_CLIENT);
+  const [deleteClient] = useMutation(DELETE_CLIENT);
 
   const modalStyle = {
     position: "absolute",
@@ -118,13 +161,28 @@ export default function SimpleTable({ clients }) {
     setSelectedClient(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     // Add your delete logic here
     console.log("Deleting client:", selectedClient);
+    try {
+      const { id } = selectedClient; // Assuming selectedClient is defined and has an id
+      await deleteClient({
+        variables: {
+          id,
+        },
+        refetchQueries: [{ query: CLIENTS_QUERY }],
+      });
+      console.log("Deleted client:", selectedClient);
+      // Handle success (e.g., update state, show notification, etc.)
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      // Handle error (e.g., show error message, etc.)
+    }
     handleClose();
   };
 
   const handleEditClick = (client) => {
+    console.log("Editing client:", client);
     setSelectedClient(client);
     setOpenEditModal(true);
   };
@@ -134,11 +192,29 @@ export default function SimpleTable({ clients }) {
     setSelectedClient(null);
   };
 
-  const handleEditSubmit = (values, { setSubmitting }) => {
+  const handleEditSubmit = async (values, { setSubmitting }) => {
     // Add your edit logic here
     console.log("Editing client:", values);
     setSubmitting(false);
     handleEditClose();
+
+    try {
+      const { data } = await editClient({
+        variables: {
+          id: selectedClient.id,
+          name: values.name,
+          email: values.email,
+          clientType: values.clientType,
+        },
+      });
+      console.log("Client edited successfully:", data);
+      setSubmitting(false);
+      handleEditClose();
+      // Handle success (e.g., update state, show notification, etc.)
+    } catch (error) {
+      console.error("Error editing client:", error);
+      // Handle error (e.g., show error message, etc.)
+    }
   };
 
   return (

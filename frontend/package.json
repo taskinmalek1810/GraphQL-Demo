@@ -38,6 +38,7 @@
     "react-jwt": "^1.2.2",
     "react-perfect-scrollbar": "^1.5.8",
     "react-router-dom": "^6.27.0",
+    "react-toastify": "^5.5.0",
     "yup": "^1.4.0"
   },
   "devDependencies": {
