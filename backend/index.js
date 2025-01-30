@@ -177,7 +177,9 @@ const resolvers = {
       try {
         console.log("user1458", user);
         // Fetch clients associated with the logged-in user's userId
-        return await Client.find({ userId: user.id }).populate("projects");
+        return await Client.find({ userId: user.id })
+          .populate("projects")
+          .limit();
       } catch (err) {
         throw new Error("Error fetching clients: " + err.message);
       }
@@ -267,12 +269,13 @@ const resolvers = {
       return project;
     },
 
-    editClient: async (_, { clientId, name, email, clientType }, { user }) => {
+    editClient: async (_, { id, name, email, clientType }, { user }) => {
+      console.log("clientId", id);
       if (!user) {
         throw new Error("Unauthorized");
       }
       const client = await Client.findOneAndUpdate(
-        { _id: clientId, userId: user.userId },
+        { _id: id, userId: user.id },
         { name, email, clientType },
         { new: true }
       );
@@ -496,7 +499,7 @@ app.post("/api/login", async (req, res) => {
     const token = jwt.sign(
       { id: admin._id, role: admin.role },
       process.env.JWT_SECRET || "your_jwt_secret",
-      { expiresIn: "1h" }
+      { expiresIn: "2m" }
     );
 
     return res.json({ token });
