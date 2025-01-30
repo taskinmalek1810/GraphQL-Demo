@@ -52,7 +52,11 @@ const Project = mongoose.model(
   new mongoose.Schema({
     name: { type: String, required: true },
     description: String,
-    status: String,
+    status: {
+      type: String,
+      enum: ["pending", "in-progress", "done", "Not Started"],
+      default: "pending",
+    },
     startDate: String,
     endDate: String,
     priority: String,
@@ -157,6 +161,7 @@ const typeDefs = gql`
       endDate: String
       priority: String
     ): Project
+    updateProjectStatus(id: ID!, status: String!): Project
     deleteClient(id: ID!): String
     deleteProject(id: ID!): String
   }
@@ -165,14 +170,6 @@ const typeDefs = gql`
 // Resolvers
 const resolvers = {
   Query: {
-    // clients: async (_, __, { user }) => {
-    //   try {
-    //     console.log("user", user);
-    //     return await Client.find({ userId: user.id }).populate("projects");
-    //   } catch (err) {
-    //     throw new Error("Error fetching clients: " + err.message);
-    //   }
-    // },
     clients: async (_, __, { user }) => {
       if (!user) {
         throw new Error("Unauthorized: User not logged in.");
@@ -206,49 +203,6 @@ const resolvers = {
       await user.save();
       return user;
     },
-    // login: async (_, { email, password }) => {
-    //   console.log(`Attempting to login with email: ${email}`);
-    //   console.log("user", User);
-    //   const user = await User.findOne({ email });
-    //   console.log("user1234", user);
-    //   if (!user) throw new Error("User not found");
-
-    //   console.log(
-    //     `Comparing password: ${password} with stored hash: ${user.password}`
-    //   );
-    //   const isPasswordValid = await bcrypt.compare(password, user.password);
-    //   if (!isPasswordValid) throw new Error("Invalid password");
-
-    //   const token = jwt.sign(
-    //     { id: user._id, role: user.role },
-    //     process.env.JWT_SECRET || "your_jwt_secret",
-    //     { expiresIn: "1h" }
-    //   );
-    //   return { token };
-    // },
-
-    // login: async (_, { email, password }) => {
-    //   const user = await User.findOne({ email });
-    //   if (!user) {
-    //     throw new Error("User not found");
-    //   }
-    //   const isPasswordValid = await bcrypt.compare(password, user.password);
-    //   if (!isPasswordValid) {
-    //     throw new Error("Invalid password");
-    //   }
-    //   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    //     expiresIn: "1d",
-    //   });
-
-    //   return {
-    //     token,
-    //     user: {
-    //       userId: user._id,
-    //       name: user.name,
-    //       email: user.email,
-    //     },
-    //   };
-    // },
 
     login: async (_, { email, password }) => {
       const user = await User.findOne({ email });
@@ -267,7 +221,7 @@ const resolvers = {
         token,
         user: {
           userId: user._id.toString(),
-          name: user.name || "N/A", // Map _id to userId
+          name: user.name || "N/A",
           userType: user.userType,
           companyName: user.companyName,
           email: user.email,
@@ -277,32 +231,23 @@ const resolvers = {
         },
       };
     },
-
     addClient: async (_, { name, email, clientType }, { user }) => {
       if (!user) {
         throw new Error("Unauthorized");
+      }
+      const existingClient = await Client.findOne({ email });
+      if (existingClient) {
+        throw new Error("Client with this email already exists.");
       }
       const client = new Client({
         name,
         email,
         clientType,
-        userId: user.userId,
+        userId: user.id,
       });
       await client.save();
       return client;
     },
-    // addClient: async (_, { name, email, clientType }, { user }) => {
-    //   const client = new Client({ name, email, clientType, userId: user.id });
-    //   await client.save();
-    //   return {
-    //     id: client.id,
-    //     name: client.name,
-    //     email: client.email,
-    //     clientType: client.clientType,
-    //     userId: client.userId, // Ensure this field is included
-    //   };
-    // },
-
     addProject: async (
       _,
       { name, description, status, startDate, endDate, priority, clientId },
@@ -321,20 +266,7 @@ const resolvers = {
       await project.save();
       return project;
     },
-    // editClient: async (_, { id, name, email, clientType }, { user }) => {
-    //   const client = await Client.findOne({ _id: id, userId: user.id });
-    //   if (!client)
-    //     throw new Error(
-    //       "Client not found or you do not have permission to edit"
-    //     );
 
-    //   client.name = name || client.name;
-    //   client.email = email || client.email;
-    //   client.clientType = clientType || client.clientType;
-
-    //   await client.save();
-    //   return client;
-    // },
     editClient: async (_, { clientId, name, email, clientType }, { user }) => {
       if (!user) {
         throw new Error("Unauthorized");
@@ -370,26 +302,29 @@ const resolvers = {
       await project.save();
       return project;
     },
+
     deleteClient: async (_, { id }, { user }) => {
-      // Ensure the user is authenticated
       if (!user) {
         throw new Error("Authentication required");
       }
 
       try {
-        // Find the client by ID and ensure it belongs to the authenticated user
-        const client = await Client.findOne({ _id: id, createdBy: user.id });
+        // Find the client and ensure it belongs to the authenticated user
+        const client = await Client.findOne({ _id: id, userId: user.id });
+        console.log("client", client);
         if (!client) {
-          throw new Error("Client not found or not authorized");
+          throw new Error("Client not found or unauthorized");
         }
 
         // Delete the client
-        await client.remove();
+        await Client.deleteOne({ _id: id });
+
         return "Client deleted successfully";
       } catch (error) {
         throw new Error(error.message || "Error deleting client");
       }
     },
+
     deleteProject: async (_, { id }, { user }) => {
       // Ensure the user is authenticated
       console.log("id897456", id);
@@ -416,34 +351,34 @@ const resolvers = {
         throw new Error(error.message || "Error deleting project");
       }
     },
+
+    updateProjectStatus: async (_, { id, status }, { user }) => {
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+
+      if (!["in-progress", "done"].includes(status)) {
+        throw new Error("Invalid status value");
+      }
+
+      const project = await Project.findOneAndUpdate(
+        { _id: id, userId: user.id },
+        { status },
+        { new: true }
+      );
+
+      if (!project) {
+        throw new Error("Project not found or unauthorized");
+      }
+
+      return project;
+    },
   },
 };
 
 // Express Setup
 const app = express();
 app.use(express.json());
-
-// Apollo Server
-// const server = new ApolloServer({
-//   typeDefs,
-//   resolvers,
-//   context: ({ req }) => {
-//     const authHeader = req.headers.authorization || "";
-//     const token = authHeader.replace("Bearer ", "");
-
-//     if (token) {
-//       try {
-//         const user = jwt.verify(token, JWT_SECRET);
-//         return { user };
-//       } catch (error) {
-//         console.warn("Invalid token:", error.message);
-//       }
-//     }
-
-//     // If no token or invalid token, return empty context
-//     return {};
-//   },
-// });
 
 const server = new ApolloServer({
   typeDefs,
@@ -470,9 +405,6 @@ const server = new ApolloServer({
     } catch (error) {
       throw new Error("Invalid token: " + error.message);
     }
-
-    // If no token or invalid token, return empty context
-    return {};
   },
 });
 
