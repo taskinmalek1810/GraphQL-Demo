@@ -1,87 +1,167 @@
 import {
   Box,
-  Icon,
-  Table,
-  styled,
-  TableRow,
-  TableBody,
-  TableCell,
-  TableHead,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Modal,
+  Typography,
   Button,
+  IconButton,
+  TextField,
+  Stack,
+  Paper,
+  DialogContentText,
+  DialogContent,
+  DialogTitle,
+  Dialog,
+  DialogActions,
 } from "@mui/material";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { useState } from "react";
-
-// STYLED COMPONENT
-const StyledTable = styled(Table)(({ theme }) => ({
-  whiteSpace: "pre",
-  "& thead": {
-    "& tr": { "& th": { paddingLeft: 0, paddingRight: 0 } },
-  },
-  "& tbody": {
-    "& tr": { "& td": { paddingLeft: 0, textTransform: "capitalize" } },
-  },
-}));
+import EditIcon from "@mui/icons-material/Edit";
+import { Formik } from "formik";
+import * as Yup from "yup";
 
 export default function SimpleTable({ clients }) {
-  // Add state for dialog
-  const [open, setOpen] = useState(false);
+  const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [openEditModal, setOpenEditModal] = useState(false);
 
-  // Handle dialog open
-  const handleClickOpen = (client) => {
-    setSelectedClient(client);
-    setOpen(true);
+  const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 4,
+    borderRadius: 2,
   };
 
-  // Handle dialog close
+  const validationSchema = Yup.object().shape({
+    name: Yup.string().required("Name is required"),
+    email: Yup.string().email("Invalid email").required("Email is required"),
+    clientType: Yup.string().required("Company Type is required"),
+  });
+
+  const columns = [
+    {
+      field: "id",
+      headerName: "ID",
+      width: 250,
+      valueGetter: (params) => params,
+    },
+    {
+      field: "name",
+      headerName: "Name",
+      width: 130,
+      valueGetter: (params) => params,
+      flex: 1,
+    },
+    {
+      field: "email",
+      headerName: "Email",
+      width: 200,
+      valueGetter: (params) => params,
+      flex: 1,
+    },
+    {
+      field: "clientType",
+      headerName: "Company Type",
+      width: 150,
+      valueGetter: (params) => params,
+      flex: 1,
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 150,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack
+          direction="row"
+          sx={{ gap: "8px", alignItems: "center", justifyContent: "center" }}
+        >
+          {/* <IconButton
+            color="primary"
+            size="small"
+            onClick={() => handleEditClick(params.row)}
+          >
+            <EditIcon />
+          </IconButton> */}
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => handleEditClick(params.row)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            onClick={() => handleClickOpen(params.row)}
+          >
+            Delete
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
+
+  const handleClickOpen = (client) => {
+    setSelectedClient(client);
+    setOpenDeleteConfirmation(true);
+  };
+
   const handleClose = () => {
-    setOpen(false);
+    setOpenDeleteConfirmation(false);
     setSelectedClient(null);
   };
 
-  // Handle delete confirmation
   const handleDelete = () => {
     // Add your delete logic here
     console.log("Deleting client:", selectedClient);
     handleClose();
   };
+
+  const handleEditClick = (client) => {
+    setSelectedClient(client);
+    setOpenEditModal(true);
+  };
+
+  const handleEditClose = () => {
+    setOpenEditModal(false);
+    setSelectedClient(null);
+  };
+
+  const handleEditSubmit = (values, { setSubmitting }) => {
+    // Add your edit logic here
+    console.log("Editing client:", values);
+    setSubmitting(false);
+    handleEditClose();
+  };
+
   return (
     <Box width="100%" overflow="auto">
-      <StyledTable>
-        <TableHead>
-          <TableRow>
-            <TableCell align="left">Id</TableCell>
-            <TableCell align="center">Name</TableCell>
-            <TableCell align="center">Email</TableCell>
-            <TableCell align="center">Company Type</TableCell>
-            <TableCell align="right">Action</TableCell>
-          </TableRow>
-        </TableHead>
+      <DataGrid
+        rows={clients}
+        columns={columns}
+        initialState={{
+          pagination: {
+            paginationModel: { page: 0, pageSize: 5 },
+          },
+        }}
+        pageSizeOptions={[5, 10, 25]}
+        slots={{ toolbar: GridToolbar }}
+        slotProps={{
+          toolbar: {
+            showQuickFilter: true,
+          },
+        }}
+        getRowId={(row) => row.id}
+      />
 
-        <TableBody>
-          {clients.map((client, index) => (
-            <TableRow key={index}>
-              <TableCell align="left">{client.id}</TableCell>
-              <TableCell align="center">{client.name}</TableCell>
-              <TableCell align="center">{client.email}</TableCell>
-              <TableCell align="center">{client.clientType}</TableCell>
-              <TableCell align="right">
-                <IconButton onClick={() => handleClickOpen(client)}>
-                  <Icon color="error">close</Icon>
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </StyledTable>
-
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={openDeleteConfirmation} onClose={handleClose}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -97,6 +177,93 @@ export default function SimpleTable({ clients }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Modal
+        open={openEditModal}
+        onClose={handleEditClose}
+        aria-labelledby="edit-client-modal"
+        aria-describedby="modal-to-edit-client-details"
+      >
+        <Paper sx={modalStyle}>
+          <Typography variant="h6" component="h2" mb={2}>
+            Edit Client
+          </Typography>
+
+          <Formik
+            initialValues={{
+              name: selectedClient?.name || "",
+              email: selectedClient?.email || "",
+              clientType: selectedClient?.clientType || "",
+            }}
+            validationSchema={validationSchema}
+            onSubmit={handleEditSubmit}
+          >
+            {({
+              values,
+              errors,
+              touched,
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              isSubmitting,
+            }) => (
+              <form onSubmit={handleSubmit}>
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    name="name"
+                    label="Name"
+                    value={values.name}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.name && Boolean(errors.name)}
+                    helperText={touched.name && errors.name}
+                  />
+                  <TextField
+                    fullWidth
+                    name="email"
+                    label="Email"
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
+                  />
+                  <TextField
+                    fullWidth
+                    name="clientType"
+                    label="Company Type"
+                    value={values.clientType}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.clientType && Boolean(errors.clientType)}
+                    helperText={touched.clientType && errors.clientType}
+                  />
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      justifyContent: "flex-end",
+                      mt: 2,
+                    }}
+                  >
+                    <Button onClick={handleEditClose}>Cancel</Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      disabled={isSubmitting}
+                    >
+                      Save Changes
+                    </Button>
+                  </Box>
+                </Stack>
+              </form>
+            )}
+          </Formik>
+        </Paper>
+      </Modal>
     </Box>
   );
 }

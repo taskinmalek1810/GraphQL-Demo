@@ -9,17 +9,15 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import Layout1Topbar from "./Layout1Topbar";
 import Layout1Sidenav from "./Layout1Sidenav";
-import Footer from "app/components/Footer";
 import { MatxSuspense } from "app/components";
 import useSettings from "app/hooks/useSettings";
-import { SecondarySidebar } from "app/components/SecondarySidebar";
 import SidenavTheme from "app/components/MatxTheme/SidenavTheme/SidenavTheme";
 import { sidenavCompactWidth, sideNavWidth } from "app/utils/constant";
 
 // STYLED COMPONENTS
 const Layout1Root = styled("div")(({ theme }) => ({
   display: "flex",
-  background: theme.palette.background.default
+  background: theme.palette.background.default,
 }));
 
 const ContentBox = styled("div")(() => ({
@@ -28,7 +26,7 @@ const ContentBox = styled("div")(() => ({
   overflowY: "auto",
   overflowX: "hidden",
   flexDirection: "column",
-  justifyContent: "space-between"
+  justifyContent: "space-between",
 }));
 
 const StyledScrollBar = styled(Scrollbar)(() => ({
@@ -36,11 +34,11 @@ const StyledScrollBar = styled(Scrollbar)(() => ({
   position: "relative",
   display: "flex",
   flexGrow: "1",
-  flexDirection: "column"
+  flexDirection: "column",
 }));
 
 const LayoutContainer = styled("div", {
-  shouldForwardProp: (prop) => prop !== "open" && prop !== "width"
+  shouldForwardProp: (prop) => prop !== "open" && prop !== "width",
 })(({ width, open }) => ({
   height: "100vh",
   display: "flex",
@@ -51,7 +49,7 @@ const LayoutContainer = styled("div", {
   position: "relative",
   overflow: "hidden",
   transition: "all 0.3s ease",
-  marginRight: open ? 50 : 0
+  marginRight: open ? 50 : 0,
 }));
 
 const Layout1 = () => {
@@ -59,7 +57,7 @@ const Layout1 = () => {
   const { layout1Settings, secondarySidebar } = settings;
   const topbarTheme = settings.themes[layout1Settings.topbar.theme];
   const {
-    leftSidebar: { mode: sidenavMode, show: showSidenav }
+    leftSidebar: { mode: sidenavMode, show: showSidenav },
   } = layout1Settings;
 
   const getSidenavWidth = () => {
@@ -120,8 +118,6 @@ const Layout1 = () => {
                 <Outlet />
               </MatxSuspense>
             </Box>
-
-            {settings.footer.show && !settings.footer.fixed && <Footer />}
           </StyledScrollBar>
         )}
 
@@ -138,15 +134,9 @@ const Layout1 = () => {
                 <Outlet />
               </MatxSuspense>
             </Box>
-
-            {settings.footer.show && !settings.footer.fixed && <Footer />}
           </ContentBox>
         )}
-
-        {settings.footer.show && settings.footer.fixed && <Footer />}
       </LayoutContainer>
-
-      {settings.secondarySidebar.show && <SecondarySidebar />}
     </Layout1Root>
   );
 };
