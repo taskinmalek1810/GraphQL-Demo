@@ -3,7 +3,6 @@ import {
   Modal,
   Typography,
   Button,
-  IconButton,
   TextField,
   Stack,
   Paper,
@@ -15,7 +14,6 @@ import {
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { useState } from "react";
-import EditIcon from "@mui/icons-material/Edit";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { gql, useMutation } from "@apollo/client";
@@ -59,7 +57,7 @@ const CLIENTS_QUERY = gql`
   }
 `;
 
-export default function SimpleTable({ clients }) {
+export default function SimpleTable({ clients, refetch }) {
   const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -114,6 +112,13 @@ export default function SimpleTable({ clients }) {
       flex: 1,
     },
     {
+      field: "projects",
+      headerName: "Associated projects",
+      width: 150,
+      valueGetter: (params) => params?.length ?? 0,
+      flex: 1,
+    },
+    {
       field: "actions",
       headerName: "Actions",
       width: 150,
@@ -123,13 +128,6 @@ export default function SimpleTable({ clients }) {
           direction="row"
           sx={{ gap: "8px", alignItems: "center", justifyContent: "center" }}
         >
-          {/* <IconButton
-            color="primary"
-            size="small"
-            onClick={() => handleEditClick(params.row)}
-          >
-            <EditIcon />
-          </IconButton> */}
           <Button
             variant="contained"
             color="primary"
@@ -172,6 +170,7 @@ export default function SimpleTable({ clients }) {
         },
         refetchQueries: [{ query: CLIENTS_QUERY }],
       });
+      refetch();
       console.log("Deleted client:", selectedClient);
       // Handle success (e.g., update state, show notification, etc.)
     } catch (error) {
@@ -209,6 +208,7 @@ export default function SimpleTable({ clients }) {
       });
       console.log("Client edited successfully:", data);
       setSubmitting(false);
+      refetch();
       handleEditClose();
       // Handle success (e.g., update state, show notification, etc.)
     } catch (error) {

@@ -14,7 +14,7 @@ import { useJwtVerify } from "./hooks/useJwtVerify";
 
 export default function App() {
   const content = useRoutes(routes);
-  useJwtVerify();
+  // useJwtVerify();
   return (
     <SettingsProvider>
       <MatxTheme>

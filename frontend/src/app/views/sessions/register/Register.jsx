@@ -1,6 +1,4 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useSnackbar } from "notistack";
+import { NavLink } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
 
@@ -16,8 +14,6 @@ import useTheme from "@mui/material/styles/useTheme";
 // GLOBAL CUSTOM COMPONENTS
 import MatxDivider from "app/components/MatxDivider";
 import { Paragraph } from "app/components/Typography";
-// GLOBAL CUSTOM HOOKS
-import useAuth from "app/hooks/useAuth";
 
 // STYLED COMPONENTS
 const ContentBox = styled("div")(({ theme }) => ({
@@ -65,32 +61,6 @@ const validationSchema = Yup.object().shape({
 });
 const Register = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
-  const [loading, setLoading] = useState(false);
-  const { createUserWithEmail, signInWithGoogle } = useAuth();
-
-  const handleGoogleRegister = async () => {
-    try {
-      await signInWithGoogle();
-      navigate("/");
-    } catch (e) {
-      console.error(e);
-      setLoading(false);
-    }
-  };
-
-  const handleFormSubmit = async (values) => {
-    try {
-      setLoading(true);
-      await createUserWithEmail(values.email, values.password);
-      navigate("/");
-      enqueueSnackbar("Register Successfully!", { variant: "success" });
-    } catch (e) {
-      setLoading(false);
-      enqueueSnackbar(e.message, { variant: "error" });
-    }
-  };
 
   return (
     <RegisterRoot>
@@ -106,21 +76,6 @@ const Register = () => {
           </Grid>
 
           <Grid size={{ md: 6, xs: 12 }}>
-            <Box px={4} pt={4}>
-              <GoogleButton
-                fullWidth
-                variant="contained"
-                onClick={handleGoogleRegister}
-                startIcon={
-                  <img src="/assets/images/logos/google.svg" alt="google" />
-                }
-              >
-                Sign In With Google
-              </GoogleButton>
-            </Box>
-
-            <MatxDivider sx={{ mt: 3, px: 4 }} text="Or" />
-
             <Box p={4} height="100%">
               <Formik
                 onSubmit={handleFormSubmit}

@@ -101,12 +101,10 @@ const Login = () => {
         },
       });
       console.log("data", data);
-      // Store the token in localStorage
-      localStorage.setItem("token", data.login.token);
-      console.log("run....");
-
-      // Navigate to the intended page or dashboard
-      navigate("/dashboard" || "/");
+      if (data.login.token) {
+        localStorage.setItem("token", data.login.token);
+        navigate("/dashboard" || "/");
+      }
 
       enqueueSnackbar("Logged In Successfully", { variant: "success" });
     } catch (error) {

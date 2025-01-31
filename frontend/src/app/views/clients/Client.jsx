@@ -56,7 +56,7 @@ const Container = styled("div")(({ theme }) => ({
 }));
 
 export default function ClientTable() {
-  const { loading, error, data } = useQuery(CLIENTS_QUERY);
+  const { loading, error, data, refetch } = useQuery(CLIENTS_QUERY);
   const [clients, setClients] = useState([]);
   const [open, setOpen] = useState(false);
 
@@ -94,6 +94,7 @@ export default function ClientTable() {
         });
         handleClose();
         resetForm();
+        refetch();
       } catch (err) {
         console.error("Error adding client:", err);
       } finally {
@@ -125,7 +126,7 @@ export default function ClientTable() {
       </Box>
 
       <SimpleCard title="Client Table">
-        <SimpleTable clients={clients} />
+        <SimpleTable clients={clients} refetch={refetch} />
       </SimpleCard>
 
       <Modal

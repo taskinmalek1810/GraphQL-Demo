@@ -9,17 +9,18 @@ export const useJwtVerify = () => {
 
   useEffect(() => {
     const verifyToken = () => {
-      if (!token) {
-        // Token is expired or doesn't exist
+      if (!token || isExpired) {
         localStorage.clear();
         navigate("/signin");
       }
     };
 
-    verifyToken();
-    // Set up interval to check token every minute
-    const interval = setInterval(verifyToken, 60000);
+    if (token) {
+      // Ensure token is present before starting verification
+      verifyToken();
+      const interval = setInterval(verifyToken, 60000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [navigate, isExpired, token]);
 };
