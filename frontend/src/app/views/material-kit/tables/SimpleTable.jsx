@@ -11,6 +11,7 @@ import {
   DialogTitle,
   Dialog,
   DialogActions,
+  MenuItem,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { useState } from "react";
@@ -80,7 +81,9 @@ export default function SimpleTable({ clients, refetch }) {
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("Name is required"),
     email: Yup.string().email("Invalid email").required("Email is required"),
-    clientType: Yup.string().required("Company Type is required"),
+    clientType: Yup.string()
+      .required("Client type is required")
+      .oneOf(["INDIVIDUAL", "COMPANY"], "Invalid client type"),
   });
 
   const columns = [
@@ -306,15 +309,21 @@ export default function SimpleTable({ clients, refetch }) {
                     helperText={touched.email && errors.email}
                   />
                   <TextField
+                    select
                     fullWidth
+                    margin="normal"
+                    id="clientType"
                     name="clientType"
-                    label="Company Type"
+                    label="Client Type"
                     value={values.clientType}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={touched.clientType && Boolean(errors.clientType)}
                     helperText={touched.clientType && errors.clientType}
-                  />
+                  >
+                    <MenuItem value="INDIVIDUAL">Individual</MenuItem>
+                    <MenuItem value="COMPANY">Company</MenuItem>
+                  </TextField>
 
                   <Box
                     sx={{

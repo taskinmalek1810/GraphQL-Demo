@@ -360,7 +360,11 @@ const resolvers = {
         throw new Error("Unauthorized");
       }
 
-      if (!["in-progress", "done"].includes(status)) {
+      if (
+        !["pending", "in-progress", "completed", "pushed", "closed"].includes(
+          status
+        )
+      ) {
         throw new Error("Invalid status value");
       }
 
